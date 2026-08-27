@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Wash Check-In</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .location-name {
+            font-size: 16px;
+            color: #667eea;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 30px;
+        }
+
+        .status {
+            margin: 30px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timestamp {
+            font-size: 18px;
+            color: #333;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        .success {
+            display: none;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .checkmark {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            background: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            animation: popIn 0.5s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .success-message {
+            font-size: 20px;
+            color: #10b981;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 13px;
+            margin-top: 30px;
+            line-height: 1.6;
+        }
+
+        .retry-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+            transition: background 0.2s;
+        }
+
+        .retry-button:hover {
+            background: #5a67d8;
+        }
+
+        .retry-button.show {
+            display: block;
+            margin: 20px auto 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚗</div>
+        <h1>Check In</h1>
+        <div class="location-name" id="locationName">Loading...</div>
+
+        <div class="status" id="status">
+            <div class="loading"></div>
+        </div>
+
+        <div class="success" id="successMessage">
+            <div class="checkmark">✓</div>
+            <div class="success-message">Checked In!</div>
+            <div class="timestamp" id="timestampDisplay"></div>
+        </div>
+
+        <div class="error" id="errorMessage"></div>
+        <button class="retry-button" id="retryButton">Try Again</button>
+
+        <div class="info-text" id="infoText">Processing your check-in...</div>
+    </div>
+
+    <script>
+        const LOCATIONS = {
+            'location1': 'Crawfordsville',
+            'location2': 'Lebanon'
+        };
+
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqnuDLbDPEWiDERtFAoDMHpRjza-kQmrAlw4OmUsjSGr6Ek-BN2ukOc1uOravjjRdLlw/exec';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const locationId = urlParams.get('location') || 'location1';
+        const locationName = LOCATIONS[locationId] || 'Check-In';
+
+        document.getElementById('locationName').textContent = locationName;
+
+        async function submitCheckIn() {
+            try {
+                const now = new Date();
+                const timestamp = now.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        location: locationName,
+                        locationId: locationId,
+                        timestamp: timestamp,
+                        time: now.toISOString()
+                    })
+                });
+
+                setTimeout(() => {
+                    document.getElementById('status').innerHTML = '';
+                    document.getElementById('timestampDisplay').innerHTML =
+                        `<strong>${locationName}</strong><br>${timestamp}`;
+                    document.getElementById('successMessage').classList.add('show');
+                    document.getElementById('infoText').textContent =
+                        'Your check-in has been recorded. You can close this window.';
+                }, 500);
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status').innerHTML = '';
+                document.getElementById('errorMessage').textContent =
+                    'Check-in sent, but we couldn\'t confirm. If the problem continues, please contact your manager.';
+                document.getElementById('errorMessage').classList.add('show');
+                document.getElementById('retryButton').classList.add('show');
+            }
+        }
+
+        document.getElementById('retryButton').addEventListener('click', () => {
+            document.getElementById('status').innerHTML = '<div class="loading"></div>';
+            document.getElementById('errorMessage').classList.remove('show');
+            document.getElementById('retryButton').classList.remove('show');
+            submitCheckIn();
+        });
+
+        window.addEventListener('load', () => { submitCheckIn(); });
+    </script>
+</body>
+</html>
