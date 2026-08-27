@@ -198,7 +198,7 @@
             'location2': 'Lebanon'
         };
 
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqnuDLbDPEWiDERtFAoDMHpRjza-kQmrAlw4OmUsjSGr6Ek-BN2ukOc1uOravjjRdLlw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5kbvyyENZfKgCTd5KKV1taZqZZUqYu-KBSyTB2g2m3eq-D3IFviSy3WF10Yhkl7hNcw/exec';
 
         const urlParams = new URLSearchParams(window.location.search);
         const locationId = urlParams.get('location') || 'location1';
@@ -209,29 +209,24 @@
         async function submitCheckIn() {
             try {
                 const now = new Date();
-                const timestamp = now.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
+
+                const params = new URLSearchParams({
+                    location:   locationName,
+                    locationId: locationId,
+                    time:       now.toISOString()
                 });
 
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({
-                        location: locationName,
-                        locationId: locationId,
-                        timestamp: timestamp,
-                        time: now.toISOString()
-                    })
+                await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`, {
+                    method: 'GET',
+                    mode:   'no-cors'
                 });
 
                 setTimeout(() => {
+                    const timestamp = now.toLocaleString('en-US', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hour12: true
+                    });
                     document.getElementById('status').innerHTML = '';
                     document.getElementById('timestampDisplay').innerHTML =
                         `<strong>${locationName}</strong><br>${timestamp}`;
